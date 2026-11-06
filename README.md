@@ -10,6 +10,10 @@ swipl newos.pl
 
 Then open <http://localhost:8081>. You can type, or press 🎙 to talk (voice input works in Chrome, Edge and Safari). Turn on 🔊 Voice to have replies read aloud. The 🧠 panel shows the facts, rules, possible worlds, dictionary, learned replies and files newos knows.
 
+## Straight from GitHub
+
+With GitHub Pages on, <https://luciangreen.github.io/newos/web/> opens the chat page directly. If newos is running on your computer (`swipl newos.pl`), the page talks to it at `http://localhost:8081`. Otherwise it uses a smaller brain that runs in the browser. That brain learns facts, rules, words, your name and replies, and reads "if" as material and relevance logic. Its memory stays in that browser.
+
 ## What you can say
 
 | | Examples |
@@ -56,7 +60,7 @@ Possible worlds inherit the actual world's facts unless they say otherwise. Arit
 
 ## API
 
-`POST /api/chat {"text": "..."}` returns `{"reply", "speak", "semantics", "pending"}`. This endpoint allows cross-origin calls, so other apps (such as retromr) can talk through newos. The other endpoints are `GET /api/state`, `POST /api/semantics {"name"}`, `POST /api/save`, `GET /api/export`, `POST /api/import` and `POST /api/reset`.
+`POST /api/chat {"text": "..."}` returns `{"reply", "speak", "semantics", "pending"}`. Every endpoint allows cross-origin calls, so other apps (such as retromr) can talk through newos. The other endpoints are `GET /api/state`, `POST /api/semantics {"name"}`, `POST /api/save`, `GET /api/export`, `POST /api/import` and `POST /api/reset`.
 
 ## Tests
 

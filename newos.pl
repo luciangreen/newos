@@ -12,8 +12,8 @@
       GET  /api/export                     -> the knowledge file as text
       POST /api/import     (Prolog text)   -> merge a knowledge file
       POST /api/reset                      -> forget everything learned
-    /api/chat allows cross-origin calls, so retromr (or anything else)
-    can talk through newos.  /static/tts.js is the shared speech module.
+    Every endpoint allows cross-origin calls, so retromr, or newos's page
+    opened from GitHub Pages, can talk to this server.  /static/tts.js is the shared speech module.
 */
 
 :- use_module(library(http/thread_httpd)).
@@ -41,13 +41,26 @@ user:file_search_path(newos_web, Dir) :-
 
 :- http_handler(root(.),             http_reply_file(newos_web('index.html'), []), []).
 :- http_handler(root(static), serve_static, [prefix]).
-:- http_handler(root(api/chat),      api_chat, [methods([post, options])]).
-:- http_handler(root(api/state),     api_state, [method(get)]).
-:- http_handler(root(api/semantics), api_semantics, [method(post)]).
-:- http_handler(root(api/save),      api_save, [method(post)]).
-:- http_handler(root(api/export),    api_export, [method(get)]).
-:- http_handler(root(api/import),    api_import, [method(post)]).
-:- http_handler(root(api/reset),     api_reset, [method(post)]).
+:- http_handler(root(api/chat),      cors(api_chat),      [methods([post, options])]).
+:- http_handler(root(api/state),     cors(api_state),     [methods([get, options])]).
+:- http_handler(root(api/semantics), cors(api_semantics), [methods([post, options])]).
+:- http_handler(root(api/save),      cors(api_save),      [methods([post, options])]).
+:- http_handler(root(api/export),    cors(api_export),    [methods([get, options])]).
+:- http_handler(root(api/import),    cors(api_import),    [methods([post, options])]).
+:- http_handler(root(api/reset),     cors(api_reset),     [methods([post, options])]).
+
+%   Every API call allows other origins (and the browser's preflight), so
+%   the page can also be opened from GitHub Pages and talk to a newos
+%   server on the same computer at http://localhost:8081.
+cors(_, Request) :-
+    memberchk(method(options), Request), !,
+    cors_enable(Request, [methods([get, post, options])]),
+    format("Access-Control-Allow-Private-Network: true~n"),
+    format("~n").
+cors(Goal, Request) :-
+    cors_enable,
+    format("Access-Control-Allow-Private-Network: true~n"),
+    call(Goal, Request).
 
 server :-
     (   getenv('PORT', P), atom_number(P, Port) -> true ; Port = 8081 ),
@@ -59,11 +72,6 @@ server(Port) :-
     format("~nnewos is running at http://localhost:~w~n~n", [Port]).
 
 api_chat(Request) :-
-    memberchk(method(options), Request), !,
-    cors_enable(Request, [methods([post, options])]),
-    format("~n").
-api_chat(Request) :-
-    cors_enable,
     http_read_json_dict(Request, In),
     (   get_dict(text, In, T0), ( string(T0) ; atom(T0) )
     ->  atom_string(T0, Text)

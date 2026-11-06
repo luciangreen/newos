@@ -120,6 +120,7 @@
 </div>
 
 <script src="static/tts.js"></script>
+<script>if (!window.NewosVoice) document.write('<script src="tts.js"><\/script>');</script>
 <script>
 "use strict";
 // If static/tts.js didn't load, carry on without speech rather than breaking the page.
@@ -127,6 +128,197 @@ if (!window.NewosVoice) window.NewosVoice = { supported: false, speaking: false,
 if (!window.NewosListen) window.NewosListen = { supported: false, listening: false, start() { return false; }, stop() {} };
 const $ = (id) => document.getElementById(id);
 const log = $("log");
+
+/* Where to send messages: this page's own newos server, a newos server on
+   this computer (when the page is opened from GitHub Pages), or the small
+   browser-only brain below when no server can be reached. */
+let API = "api/", local = false;
+async function findServer() {
+  for (const base of ["api/", "http://localhost:8081/api/"]) {
+    try {
+      const r = await fetch(base + "state", { cache: "no-store" });
+      if (r.ok && (r.headers.get("content-type") || "").includes("json")) { API = base; return true; }
+    } catch (e) { /* try the next */ }
+  }
+  local = true;
+  return false;
+}
+/* ---------------- a small newos brain ---------------- */
+const Brain = (() => {
+  const blank = () => ({ facts: [], rules: [], replies: {
+      "hello": "Hello{name}! What shall we talk about?", "hi": "Hi{name}!", "hey": "Hey{name}!",
+      "how are you": "I'm well, thank you. I'm learning all the time. How are you?",
+      "thanks": "You're welcome.", "thank you": "You're welcome.", "bye": "Goodbye{name}!", "goodbye": "Goodbye{name}!" },
+    words: {}, name: null, display: {} });
+  let mem = blank(), pending = null, last = null, lastEntity = null;
+  try { const saved = JSON.parse(localStorage.getItem("newos_browser_brain") || "null"); if (saved && saved.facts) mem = Object.assign(blank(), saved); } catch (e) {}
+  const save = () => { try { localStorage.setItem("newos_browser_brain", JSON.stringify(mem)); } catch (e) {} };
+
+  const FUNC = new Set("a an the is are am not and or if then of to in on at it he she they this that i you my your me".split(" "));
+  const IRREG = { men: "man", women: "woman", people: "person", children: "child", mice: "mouse", feet: "foot", teeth: "tooth", geese: "goose", fish: "fish", sheep: "sheep" };
+  const IRREG_PL = Object.fromEntries(Object.entries(IRREG).map(([p, s]) => [s, p]));
+  const singular = (w) => IRREG[w] || (/ies$/.test(w) && w.length > 4 ? w.slice(0, -3) + "y" : /(ches|shes|xes|sses|zes)$/.test(w) ? w.slice(0, -2) : /(ss|us|is|ous)$/.test(w) ? w : /s$/.test(w) && w.length > 2 ? w.slice(0, -1) : w);
+  const plural = (w) => IRREG_PL[w] || (/[^aeiou]y$/.test(w) ? w.slice(0, -1) + "ies" : /(s|x|z|ch|sh)$/.test(w) ? w + "es" : w + "s");
+  const art = (w) => (/^[aeiou]/.test(w) ? "an " : "a ") + w;
+  const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
+  const nameOf = (e) => e === "user" ? "you" : e === "bot" ? "I" : (mem.display[e] || (mem.theWords && mem.theWords[e] ? "the " + e : e));
+  const be = (e) => e === "user" ? "are" : e === "bot" ? "am" : "is";
+
+  function norm(text) {
+    return text.replace(/[’‘]/g, "'").replace(/\b(\w+)n't\b/gi, (m, b) => b.toLowerCase() === "can" ? "can not" : b.toLowerCase() === "won" ? "will not" : b + " not")
+      .replace(/\b(what|who|it|that|there|he|she|where|how)'s\b/gi, "$1 is").replace(/\bi'm\b/gi, "i am").replace(/'re\b/gi, " are")
+      .replace(/'s\b/gi, "").trim();
+  }
+  function words(s) { return s.toLowerCase().replace(/[.!?,;:"]+/g, " ").trim().split(/\s+/).filter(Boolean); }
+  function rememberNames(raw) {
+    raw.split(/\s+/).forEach((w, i) => { const c = w.replace(/[^\w'-]/g, ""); if (/^[A-Z]/.test(c) && !FUNC.has(c.toLowerCase()) && (i > 0 || !["The", "All", "Every", "Is", "What", "Who"].includes(c))) mem.display[c.toLowerCase()] = c; });
+  }
+  function entity(ws) {
+    if (!ws.length) return null;
+    if (ws.length === 1 && ["i", "me"].includes(ws[0])) return "user";
+    if (ws.length === 1 && ws[0] === "you") return "bot";
+    if (ws.length === 1 && ["it", "he", "she", "they", "him", "her"].includes(ws[0])) return lastEntity || ws[0];
+    if (ws[0] === "the") { mem.theWords = mem.theWords || {}; mem.theWords[ws.slice(1).join(" ")] = 1; return ws.slice(1).join(" "); }
+    if (ws[0] === "my") return "your " + ws.slice(1).join(" ");
+    return ws.join(" ");
+  }
+  const pred = (ws) => { const a = ws[0] === "a" || ws[0] === "an"; const p = (a ? ws.slice(1) : ws).join(" "); if (a) { mem.nouns = mem.nouns || {}; mem.nouns[p] = 1; } return p; };
+  const predText = (p) => (mem.nouns && mem.nouns[p] ? art(p) : p);
+
+  // Is entity e p?  -> {v: true|false|null, why}
+  function prove(e, p, depth = 6, seen = new Set()) {
+    const f = mem.facts.find((x) => x.s === e && x.p === p);
+    if (f) return { v: !f.neg, why: (e === "user" ? "you told me you " : "you told me that " + nameOf(e) + " ") + (f.neg ? be(e) + " not " : be(e) + " ") + predText(p) };
+    if (depth <= 0) return { v: null };
+    for (const r of mem.rules) {
+      if (r.p !== p || seen.has(r.c)) continue;
+      const sub = prove(e, r.c, depth - 1, new Set([...seen, r.c]));
+      if (sub.v === true) return { v: !r.neg, why: sub.why + ", and " + (r.neg ? "no " : "all ") + plural(r.c) + " are " + (mem.nouns && mem.nouns[p] ? plural(p) : p) };
+    }
+    return { v: null };
+  }
+  function describe(e) {
+    const preds = new Set([...mem.facts.map((f) => f.p), ...mem.rules.map((r) => r.p)]);
+    const yes = [...preds].filter((p) => prove(e, p).v === true).map(predText);
+    const no = mem.facts.filter((f) => f.s === e && f.neg).map((f) => predText(f.p));
+    const parts = [];
+    if (yes.length) parts.push(cap(nameOf(e)) + " " + be(e) + " " + list(yes));
+    if (no.length) parts.push(cap(nameOf(e)) + " " + be(e) + " not " + list(no));
+    if (mem.words[e]) parts.push("\"" + e + "\" means " + mem.words[e]);
+    return parts.length ? parts.join(". ") + "." : "I don't know anything about " + nameOf(e) + " yet. Tell me something!";
+  }
+  const list = (xs) => xs.length < 2 ? xs.join("") : xs.slice(0, -1).join(", ") + " and " + xs[xs.length - 1];
+  function prop(ws) {          // "the moon is cheese" | "2+2=4"
+    const s = ws.join(" ");
+    if (/^[\d\s+\-*/().]+(=|is|equals)[\d\s+\-*/().]+$/.test(s)) { const [a, b] = s.split(/=|is|equals/); return { math: true, a: a.trim(), b: b.trim() }; }
+    const i = ws.findIndex((w) => w === "is" || w === "are" || w === "am");
+    if (i < 1) return null;
+    const neg = ws[i + 1] === "not";
+    return { s: entity(ws.slice(0, i)), p: pred(ws.slice(i + (neg ? 2 : 1))), neg };
+  }
+  const calc = (e) => { if (!/^[\d\s+\-*/().]+$/.test(e)) return NaN; try { return Function('"use strict";return (' + e + ")")(); } catch (x) { return NaN; } };
+  const truthOf = (q) => q.math ? (calc(q.a) === calc(q.b)) : (() => { const r = prove(q.s, q.p).v; return q.neg ? r === false : r === true; })();
+  const say = (q) => q.math ? q.a + " = " + q.b : nameOf(q.s) + " " + be(q.s) + (q.neg ? " not " : " ") + predText(q.p);
+  const content = (q) => q.math ? [q.a, q.b].join(" ").match(/\d+/g) || [] : [...q.s.split(" "), ...q.p.split(" ")].filter((w) => !FUNC.has(w));
+
+  function reply(raw0) {
+    const raw = norm(raw0), ws = words(raw), key = ws.join(" ");
+    if (!ws.length) return "Say something and I'll do my best.";
+    if (pending && pending.type === "teach") {
+      const k = pending.key; pending = null;
+      if (!["skip", "never mind", "nothing", "cancel"].includes(key)) {
+        mem.replies[k] = raw0.replace(/^say\s+/i, "").trim(); save();
+        return "Got it. When you say \"" + k + "\", I'll say \"" + mem.replies[k] + "\".";
+      }
+      return "OK, never mind.";
+    }
+    rememberNames(raw);
+    let m;
+    if ((m = key.match(/^(?:my name is|call me|i am called) (\w+)/))) { mem.name = m[1]; save(); return "Nice to meet you, " + nameOf(m[1]) + "."; }
+    if (/^(what is my name|who am i)$/.test(key)) return mem.name ? "Your name is " + nameOf(mem.name) + "." : "You haven't told me your name yet.";
+    if (/^(who are you|what are you|what is your name)$/.test(key)) return "I'm newos, running in your browser. I learn whatever you teach me.";
+    if ((m = raw.match(/^(?:when|if) i say (.+?),? (?:you )?(?:should )?(?:say|reply|answer) (.+)$/i))) {
+      const k = words(m[1]).join(" "); mem.replies[k] = m[2].replace(/^["']|["']$/g, ""); save();
+      return "Got it. When you say \"" + k + "\", I'll say \"" + mem.replies[k] + "\".";
+    }
+    if ((m = key.match(/^(\w+) means (.+)$/)) || (m = key.match(/^define (\w+) as (.+)$/))) { mem.words[m[1]] = m[2]; save(); return "Thanks. Now I know that " + m[1] + " means " + m[2] + "."; }
+    if ((m = key.match(/^what does (\w+) mean$/))) return mem.words[m[1]] ? "\"" + m[1] + "\" means " + mem.words[m[1]] + "." : "I don't know what " + m[1] + " means yet. Tell me: " + m[1] + " means...";
+    if ((m = raw.toLowerCase().match(/^(?:what is|what's|calculate)\s+([\d\s+\-*/().]+)\??$/))) { const v = calc(m[1]); return isNaN(v) ? "I can't work that out." : m[1].trim() + " is " + v + "."; }
+    if (key === "why") return last ? "Because " + last + "." : "Ask me something first, then ask why.";
+    if (key === "forget everything") { mem = blank(); save(); return "I've forgotten everything and started fresh."; }
+    if ((m = raw.match(/^(compare )?if (.+?),? then (.+?)\??$/i))) {
+      const a = prop(words(m[2])), b = prop(words(m[3]));
+      if (a && b) {
+        const ta = truthOf(a), tb = truthOf(b), shared = content(a).filter((w) => content(b).includes(w));
+        const mat = !ta || tb;
+        let r = "As a material conditional, \"if " + say(a) + " then " + say(b) + "\" is " + mat + ".";
+        if (mat && !ta) r += " But only because \"" + say(a) + "\" is false, a paradox of material implication.";
+        r += shared.length ? " In relevance logic the two share content (" + shared.join(", ") + ")." : " In relevance logic it fails: the two parts share no content.";
+        return r;
+      }
+    }
+    const generic = key.match(/^(\w+) are (not )?(.+)$/);
+    if (generic && singular(generic[1]) !== generic[1] && !FUNC.has(generic[1]) && !mem.facts.some((f) => f.s === generic[1])) m = generic;
+    else m = null;
+    if (m || (m = key.match(/^(?:all|every|each) (\w+) (?:is|are) (not )?(.+)$/)) || (m = key.match(/^no (\w+) (?:is|are) ()(.+)$/))) {
+      const c = singular(m[1]); let p = pred(m[3].split(" "));
+      if (!mem.nouns || !mem.nouns[p]) { const sp = singular(p); if (sp !== p && !p.includes(" ")) { p = sp; mem.nouns = mem.nouns || {}; mem.nouns[p] = 1; } }
+      mem.rules.push({ c, p, neg: !!m[2] || key.startsWith("no ") }); save();
+      const so = [...new Set(mem.facts.map((f) => f.s))].filter((e) => prove(e, c).v === true);
+      return "Got it: " + (key.startsWith("no ") || m[2] ? "no " : "all ") + plural(c) + " are " + (mem.nouns[p] ? plural(p) : p) + "." +
+        (so.length && !m[2] ? " So " + list(so.map((e) => nameOf(e) + " " + be(e) + " " + predText(p))) + ", too." : "");
+    }
+    if ((m = key.match(/^(?:is|are|am) (.+)$/))) {
+      const w2 = m[1].split(" ");
+      const n = w2[0] === "the" || w2[0] === "my" ? 2 : 1;
+      const e = entity(w2.slice(0, n)), neg = w2[n] === "not", p = pred(w2.slice(n + (neg ? 1 : 0)));
+      if (e && p) {
+        lastEntity = e === "user" || e === "bot" ? lastEntity : e;
+        const r = prove(e, p);
+        last = r.why || null;
+        if (r.v === null) return "I don't know whether " + nameOf(e) + " " + be(e) + " " + predText(p) + ". Tell me and I'll remember.";
+        const yes = neg ? !r.v : r.v;
+        return (yes ? "Yes. " : "No. ") + cap(nameOf(e)) + " " + be(e) + (r.v ? " " : " not ") + predText(p) + ".";
+      }
+    }
+    if ((m = key.match(/^(?:who|what) (?:is|are) (.+)$/)) || (m = key.match(/^(?:what do you know about|tell me about) (.+)$/))) {
+      const w2 = m[1].split(" "), e = entity(w2);
+      const known = mem.facts.some((f) => f.s === e) || e === "user" || e === "bot";
+      if (known) { lastEntity = e; return describe(e); }
+      const p = pred(w2);
+      const who = [...new Set(mem.facts.map((f) => f.s))].filter((x) => prove(x, p).v === true);
+      if (who.length) return cap(list(who.map(nameOf))) + (who.length > 1 ? " are " : " " + be(who[0]) + " ") + predText(p) + ".";
+      if (mem.words[e]) return "\"" + e + "\" means " + mem.words[e] + ".";
+    }
+    if (mem.replies[key]) return mem.replies[key].replace("{name}", mem.name ? ", " + nameOf(mem.name) : "");
+    if (/ (is|are|am) /.test(" " + key + " ") && !/^(what|who|why|how|where|when)\b/.test(key)) {
+      const q = prop(ws);
+      if (q && q.math) return calc(q.a) === calc(q.b) ? "That's right." : "Actually, " + q.a + " is " + calc(q.a) + ".";
+      if (q && q.s && q.p) {
+        const before = prove(q.s, q.p).v;
+        mem.facts = mem.facts.filter((f) => !(f.s === q.s && f.p === q.p));
+        mem.facts.push({ s: q.s, p: q.p, neg: q.neg }); save();
+        if (q.s !== "user" && q.s !== "bot") lastEntity = q.s;
+        const follows = mem.rules.filter((r) => r.c === q.p && !q.neg).map((r) => nameOf(q.s) + " " + be(q.s) + (r.neg ? " not " : " ") + predText(r.p));
+        return (before !== null && before === q.neg ? "Oh, I thought otherwise. I've updated that: " : "I'll remember that: ") + say(q) + "." + (follows.length ? " That means " + list(follows) + "." : "");
+      }
+    }
+    // closest learned reply
+    const kw = new Set(ws);
+    let best = null, score = 0;
+    for (const [k, v] of Object.entries(mem.replies)) {
+      const kk = new Set(k.split(" ")), inter = [...kk].filter((x) => kw.has(x)).length;
+      const s = inter / new Set([...kk, ...kw]).size;
+      if (s > score) { score = s; best = v; }
+    }
+    if (best && score >= 0.5) return best.replace("{name}", mem.name ? ", " + nameOf(mem.name) : "");
+    pending = { type: "teach", key };
+    return "I'm not sure how to answer that yet. What should I say when you say that?";
+  }
+  return { reply };
+})();
+
+
 let voiceOn = false, state = null, tab = "logic";
 try { voiceOn = localStorage.getItem("newos_voice") === "1"; } catch (e) {}
 
@@ -161,9 +353,15 @@ async function send(text) {
   add("me", text);
   $("text").value = "";
   $("chips").style.display = "none";
+  if (local) {
+    const reply = Brain.reply(text);
+    add("bot", reply);
+    if (voiceOn) NewosVoice.speak(reply);
+    return;
+  }
   let j;
   try {
-    const r = await fetch("api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+    const r = await fetch(API + "chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
     j = await r.json();
   } catch (e) {
     $("offline").style.display = "block";
@@ -187,7 +385,7 @@ EXAMPLES.forEach((t) => {
 });
 
 $("sem").addEventListener("change", async () => {
-  await fetch("api/semantics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: $("sem").value }) });
+  await fetch(API + "semantics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: $("sem").value }) });
   send("which semantics");
 });
 
@@ -234,23 +432,34 @@ function paint() {
   p.querySelectorAll("[data-open]").forEach((a) => a.onclick = (e) => { e.preventDefault(); send("open " + a.dataset.open); });
 }
 async function refresh() {
-  try { state = await (await fetch("api/state", { cache: "no-store" })).json(); $("sem").value = state.semantics; paint(); } catch (e) { /* offline */ }
+  try { state = await (await fetch(API + "state", { cache: "no-store" })).json(); $("sem").value = state.semantics; paint(); } catch (e) { /* offline */ }
 }
 document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
   document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
   tab = t.dataset.tab; paint();
 });
 $("panelBtn").onclick = () => $("side").classList.toggle("open");
-$("saveBtn").onclick = async () => { await fetch("api/save", { method: "POST" }); add("bot", "Saved."); };
+$("saveBtn").onclick = async () => { await fetch(API + "save", { method: "POST" }); add("bot", "Saved."); };
 $("importIn").onchange = async (e) => {
   const f = e.target.files[0]; if (!f) return;
-  const r = await fetch("api/import", { method: "POST", headers: { "Content-Type": "text/plain" }, body: await f.text() });
+  const r = await fetch(API + "import", { method: "POST", headers: { "Content-Type": "text/plain" }, body: await f.text() });
   const j = await r.json(); add("bot", `Imported ${j.loaded} items.`); refresh();
 };
 $("resetBtn").onclick = () => send("reset everything");
 
-add("bot", "Hi, I'm newos. Teach me facts, words and rules, ask me questions, or test how I read “if… then”. Type, or press 🎙 to talk.");
-refresh();
+(async function boot() {
+  await findServer();
+  if (local) {
+    $("sem").disabled = true; $("sem").title = "The browser-only brain reads if as material and relevance logic";
+    document.querySelector(".foot").style.display = "none";
+    $("panel").innerHTML = '<div class="empty">Running in your browser without the Prolog server, with a smaller brain. Its memory is kept in this browser. For everything newos can do, run <b>swipl newos.pl</b> and open http://localhost:8081.</div>';
+    add("bot", "Hi, I'm newos, running in your browser. Teach me facts, rules, words and replies, and ask me questions. For the full newos, run it with SWI-Prolog.");
+  } else {
+    $("exportBtn").href = API + "export";
+    add("bot", "Hi, I'm newos. Teach me facts, words and rules, ask me questions, or test how I read “if… then”. Type, or press 🎙 to talk.");
+    refresh();
+  }
+})();
 </script>
 </body>
 </html>
