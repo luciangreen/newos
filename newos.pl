@@ -40,7 +40,7 @@ user:file_search_path(newos_web, Dir) :-
     directory_file_path(App, web, Dir).
 
 :- http_handler(root(.),             http_reply_file(newos_web('index.html'), []), []).
-:- http_handler(root(static),        serve_files_in_directory(newos_web), [prefix]).
+:- http_handler(root(static), serve_static, [prefix]).
 :- http_handler(root(api/chat),      api_chat, [methods([post, options])]).
 :- http_handler(root(api/state),     api_state, [method(get)]).
 :- http_handler(root(api/semantics), api_semantics, [method(post)]).
@@ -102,5 +102,16 @@ api_import(Request) :-
 api_reset(_) :-
     kb_reset,
     reply_json_dict(_{ok:true}).
+
+serve_static(Request) :-
+    (   memberchk(path_info(P0), Request) -> true ; P0 = '' ),
+    (   atom_concat('/', P, P0) -> true ; P = P0 ),
+    \+ sub_atom(P, _, _, _, '..'),
+    app_dir(A),
+    atomic_list_concat([A, '/web/', P], F),
+    exists_file(F), !,
+    http_reply_file(F, [unsafe(true)], Request).
+serve_static(Request) :-
+    http_404([], Request).
 
 :- initialization(server).

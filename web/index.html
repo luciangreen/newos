@@ -122,6 +122,9 @@
 <script src="static/tts.js"></script>
 <script>
 "use strict";
+// If static/tts.js didn't load, carry on without speech rather than breaking the page.
+if (!window.NewosVoice) window.NewosVoice = { supported: false, speaking: false, speak() { return Promise.resolve(); }, cancel() {} };
+if (!window.NewosListen) window.NewosListen = { supported: false, listening: false, start() { return false; }, stop() {} };
 const $ = (id) => document.getElementById(id);
 const log = $("log");
 let voiceOn = false, state = null, tab = "logic";
@@ -158,17 +161,20 @@ async function send(text) {
   add("me", text);
   $("text").value = "";
   $("chips").style.display = "none";
+  let j;
   try {
     const r = await fetch("api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
-    const j = await r.json();
-    add("bot", j.reply);
-    $("sem").value = j.semantics;
-    if (voiceOn) NewosVoice.speak(j.speak);
-    refresh();
+    j = await r.json();
   } catch (e) {
     $("offline").style.display = "block";
     add("bot", "I can't reach my server right now.");
+    return;
   }
+  $("offline").style.display = "none";
+  add("bot", j.reply || "(no reply)");
+  if (j.semantics) $("sem").value = j.semantics;
+  if (voiceOn) NewosVoice.speak(j.speak);
+  refresh();
 }
 
 $("bar").addEventListener("submit", (e) => { e.preventDefault(); send($("text").value); });

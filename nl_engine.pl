@@ -645,7 +645,7 @@ conditional_reply(evaluate, A, B, R) :-
     semantics_name(Sem, N),
     realize(law(A, B), S0), capitalize(S0, S),
     value_text(V, VT),
-    maplist([Note, T]>>say_note(Note, A, B, T), Notes, Ts0),
+    maplist(f(A, B)/[Note, T]>>say_note(Note, A, B, T), Notes, Ts0),
     exclude(==(""), Ts0, Ts),
     atomic_list_concat(Ts, ' ', Expl),
     format(string(R), "Under the ~w, \"~w\" is ~w. ~w\n(Say \"compare\" before it to see every semantics, or \"remember that\" to make it a rule.)",
@@ -1107,7 +1107,7 @@ learn_rule(Rule, R) :-
     realize(Rule, S0), capitalize(S0, S),
     findall(E, ( known_subject(E), holds_cwa(actual, is(E, C)) ), Es0), sort(Es0, Es),
     (   Rule = all(_, _), Es \== []
-    ->  maplist([E, T]>>( realize(is(E, P), T0), capitalize(T0, T) ), Es, Ts), and_list(Ts, AT),
+    ->  maplist(P/[E, T]>>( realize(is(E, P), T0), capitalize(T0, T) ), Es, Ts), and_list(Ts, AT),
         format(string(Extra1), " So ~w, too.", [AT])
     ;   Extra1 = ""
     ),

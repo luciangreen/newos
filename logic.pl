@@ -195,11 +195,11 @@ evaluate(material, A, B, result(V, Notes)) :-
 
 evaluate(strict, A, B, result(V, Notes)) :-
     all_worlds(Ws),
-    include([W]>>holds_cwa(W, A), Ws, AWs),
+    include(A/[W]>>holds_cwa(W, A), Ws, AWs),
     (   AWs == []
     ->  V = true,
         Notes0 = [no_a_world(A), vacuous(strict)]
-    ;   exclude([W]>>holds_cwa(W, B), AWs, Bad),
+    ;   exclude(B/[W]>>holds_cwa(W, B), AWs, Bad),
         (   Bad == []
         ->  V = true, Notes0 = [a_worlds(AWs), b_in_all(B)]
         ;   V = false, Notes0 = [a_worlds(AWs), counter_worlds(Bad, B)]
@@ -227,7 +227,7 @@ evaluate(lewis, A, B, result(V, Notes)) :-
     closest_a_worlds(A, Closest, Dist),
     (   Closest == []
     ->  V = true, Notes = [no_a_world(A), vacuous(lewis)]
-    ;   exclude([W]>>holds_cwa(W, B), Closest, Bad),
+    ;   exclude(B/[W]>>holds_cwa(W, B), Closest, Bad),
         (   Bad == []
         ->  V = true, Notes = [closest(Closest, Dist), b_in_all(B)]
         ;   V = false, Notes = [closest(Closest, Dist), counter_worlds(Bad, B)]
@@ -241,7 +241,7 @@ evaluate(stalnaker, A, B, result(V, Notes)) :-
     ;   Closest = [W]
     ->  ( holds_cwa(W, B) -> V = true ; V = false ),
         Notes = [closest([W], Dist), value_in(W, B, V)]
-    ;   partition([W]>>holds_cwa(W, B), Closest, Yes, No),
+    ;   partition(B/[W]>>holds_cwa(W, B), Closest, Yes, No),
         (   No == [] -> V = true
         ;   Yes == [] -> V = false
         ;   V = indeterminate
@@ -251,12 +251,12 @@ evaluate(stalnaker, A, B, result(V, Notes)) :-
 
 evaluate(adams, A, B, result(V, Notes)) :-
     all_worlds(Ws),
-    include([W]>>holds_cwa(W, A), Ws, AWs),
+    include(A/[W]>>holds_cwa(W, A), Ws, AWs),
     sum_weights(Ws, Total),
     sum_weights(AWs, PA0),
     (   PA0 =:= 0
     ->  V = undefined, Notes = [no_a_world(A), zero_probability]
-    ;   include([W]>>holds_cwa(W, B), AWs, ABWs),
+    ;   include(B/[W]>>holds_cwa(W, B), AWs, ABWs),
         sum_weights(ABWs, PAB0),
         P is PAB0 / PA0,
         PA is PA0 / Total,
