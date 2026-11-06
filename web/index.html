@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>newos</title>
+<style>
+  :root {
+    --bg: #f6f3ec; --paper: #fffdf8; --ink: #23201b; --muted: #7b7468; --line: #e6dfd1;
+    --accent: #2f5d50; --accent-ink: #fff; --bot: #eef3ef; --me: #2f5d50; --warn: #a2482b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink);
+    font: 16px/1.5 ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif; }
+  .app { display: grid; grid-template-columns: 1fr 340px; grid-template-rows: auto 1fr; height: 100%; }
+  header { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; padding: 10px 18px;
+    border-bottom: 1px solid var(--line); background: var(--paper); }
+  .brand { font-weight: 800; font-size: 20px; letter-spacing: -.3px; }
+  .brand span { color: var(--accent); }
+  .tag { color: var(--muted); font-size: 13px; }
+  .grow { flex: 1; }
+  select, .btn { font: inherit; font-size: 14px; border: 1px solid var(--line); background: #fff;
+    border-radius: 10px; padding: 6px 10px; color: var(--ink); cursor: pointer; }
+  .btn:hover, select:hover { border-color: #cfc5b2; }
+  .btn.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .chat { display: flex; flex-direction: column; min-height: 0; }
+  .log { flex: 1; overflow-y: auto; padding: 22px 6% 12px; }
+  .msg { max-width: 720px; margin: 0 0 12px; display: flex; }
+  .msg.me { justify-content: flex-end; margin-left: auto; }
+  .bubble { padding: 10px 14px; border-radius: 16px; white-space: pre-wrap; word-wrap: break-word;
+    max-width: 100%; }
+  .bot .bubble { background: var(--bot); border-top-left-radius: 4px; }
+  .me .bubble { background: var(--me); color: #fff; border-top-right-radius: 4px; }
+  .bot .speak { border: 0; background: none; cursor: pointer; opacity: .45; font-size: 15px; margin-left: 4px; align-self: flex-end; }
+  .bot .speak:hover { opacity: 1; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 6% 10px; }
+  .chip { font-size: 13px; border: 1px solid var(--line); background: var(--paper); border-radius: 999px;
+    padding: 5px 12px; cursor: pointer; color: var(--ink); }
+  .chip:hover { border-color: var(--accent); color: var(--accent); }
+  form.bar { display: flex; gap: 8px; padding: 12px 6% 18px; border-top: 1px solid var(--line); background: var(--paper); }
+  form.bar input { flex: 1; font: inherit; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: #fff; }
+  form.bar input:focus { outline: 2px solid #bcd3c9; border-color: var(--accent); }
+  .round { width: 48px; height: 48px; border-radius: 14px; border: 1px solid var(--line); background: #fff;
+    font-size: 20px; cursor: pointer; }
+  .round.send { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .round.live { background: #c0392b; color: #fff; border-color: #c0392b; animation: pulse 1.4s infinite; }
+  @keyframes pulse { 50% { box-shadow: 0 0 0 6px rgba(192,57,43,.18); } }
+  .interim { color: var(--muted); font-style: italic; padding: 0 6% 6px; min-height: 1.5em; font-size: 14px; }
+  aside { border-left: 1px solid var(--line); background: var(--paper); display: flex; flex-direction: column; min-height: 0; }
+  .tabs { display: flex; gap: 2px; padding: 10px 10px 0; flex-wrap: wrap; }
+  .tab { font-size: 13px; padding: 6px 10px; border-radius: 8px 8px 0 0; cursor: pointer; color: var(--muted); border: 0; background: none; }
+  .tab.active { background: var(--bg); color: var(--ink); font-weight: 600; }
+  .panel { flex: 1; overflow-y: auto; padding: 12px 14px; background: var(--bg); font-size: 14px; }
+  .panel h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--muted); margin: 14px 0 6px; }
+  .panel h3:first-child { margin-top: 0; }
+  .panel ul { margin: 0; padding-left: 18px; }
+  .panel li { margin: 3px 0; }
+  .panel .empty { color: var(--muted); }
+  .panel .w { font-weight: 600; }
+  .panel .src { font-size: 11px; color: var(--muted); margin-left: 4px; }
+  .foot { display: flex; gap: 6px; padding: 10px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+  .note { font-size: 12px; color: var(--muted); padding: 0 12px 10px; }
+  .offline { background: #fff3e6; color: var(--warn); padding: 10px 6%; font-size: 14px; display: none; }
+  @media (max-width: 860px) {
+    .app { grid-template-columns: 1fr; }
+    aside { display: none; }
+    aside.open { display: flex; position: fixed; inset: 56px 0 0 0; z-index: 4; }
+    .tag { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">new<span>os</span></div>
+    <div class="tag">a chatbot that learns words, logic and what you teach it</div>
+    <div class="grow"></div>
+    <label class="tag" for="sem">“if” means</label>
+    <select id="sem" title="Semantics of if…then">
+      <option value="material">material conditional</option>
+      <option value="strict">strict (modal)</option>
+      <option value="relevance">relevance logic</option>
+      <option value="lewis">Lewis (closest worlds)</option>
+      <option value="stalnaker">Stalnaker (closest world)</option>
+      <option value="adams">Adams (probability)</option>
+    </select>
+    <button class="btn" id="voiceBtn" title="Read replies aloud">🔈 Voice</button>
+    <button class="btn" id="panelBtn" title="What I know">🧠</button>
+  </header>
+
+  <section class="chat">
+    <div class="offline" id="offline">Can't reach the newos server. Start it with <b>swipl newos.pl</b> and reload.</div>
+    <div class="log" id="log"></div>
+    <div class="chips" id="chips"></div>
+    <div class="interim" id="interim"></div>
+    <form class="bar" id="bar">
+      <input id="text" autocomplete="off" placeholder="Say something… e.g. Socrates is a man." autofocus>
+      <button type="button" class="round" id="micBtn" title="Talk (voice input)">🎙</button>
+      <button type="submit" class="round send" title="Send">➤</button>
+    </form>
+  </section>
+
+  <aside id="side">
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-tab="logic">Logic</button>
+      <button class="tab" data-tab="worlds">Worlds</button>
+      <button class="tab" data-tab="words">Dictionary</button>
+      <button class="tab" data-tab="replies">Replies</button>
+      <button class="tab" data-tab="files">Files</button>
+    </div>
+    <div class="panel" id="panel"></div>
+    <div class="foot">
+      <button class="btn" id="saveBtn">💾 Save</button>
+      <a class="btn" href="api/export" id="exportBtn" style="text-decoration:none">⬇ Export</a>
+      <label class="btn">⬆ Import<input type="file" id="importIn" accept=".pl,.txt" hidden></label>
+      <button class="btn" id="resetBtn">Reset…</button>
+    </div>
+    <div class="note">Everything is saved to <code>data/knowledge.pl</code> after each message.</div>
+  </aside>
+</div>
+
+<script src="static/tts.js"></script>
+<script>
+"use strict";
+const $ = (id) => document.getElementById(id);
+const log = $("log");
+let voiceOn = false, state = null, tab = "logic";
+try { voiceOn = localStorage.getItem("newos_voice") === "1"; } catch (e) {}
+
+const EXAMPLES = [
+  "Socrates is a man.", "All men are mortal.", "Is Socrates mortal?", "Why?",
+  "If the moon is cheese, then 2+2=4.", "Compare if the moon is cheese then 2+2=4",
+  "In world w1, the moon is cheese.", "Use lewis semantics",
+  "Flurb means a small blue bird.", "When I say good night, you say sleep well!",
+  "dear diary I enjoyed writing today", "open welcome", "help",
+];
+
+function add(who, text) {
+  const row = document.createElement("div");
+  row.className = "msg " + who;
+  const b = document.createElement("div");
+  b.className = "bubble";
+  b.textContent = text;
+  row.appendChild(b);
+  if (who === "bot" && NewosVoice.supported) {
+    const s = document.createElement("button");
+    s.className = "speak"; s.title = "Read aloud"; s.textContent = "🔈";
+    s.onclick = () => NewosVoice.speak(text);
+    row.appendChild(s);
+  }
+  log.appendChild(row);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function send(text) {
+  text = text.trim();
+  if (!text) return;
+  add("me", text);
+  $("text").value = "";
+  $("chips").style.display = "none";
+  try {
+    const r = await fetch("api/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+    const j = await r.json();
+    add("bot", j.reply);
+    $("sem").value = j.semantics;
+    if (voiceOn) NewosVoice.speak(j.speak);
+    refresh();
+  } catch (e) {
+    $("offline").style.display = "block";
+    add("bot", "I can't reach my server right now.");
+  }
+}
+
+$("bar").addEventListener("submit", (e) => { e.preventDefault(); send($("text").value); });
+
+EXAMPLES.forEach((t) => {
+  const c = document.createElement("button");
+  c.className = "chip"; c.type = "button"; c.textContent = t;
+  c.onclick = () => send(t);
+  $("chips").appendChild(c);
+});
+
+$("sem").addEventListener("change", async () => {
+  await fetch("api/semantics", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: $("sem").value }) });
+  send("which semantics");
+});
+
+function paintVoice() { $("voiceBtn").classList.toggle("on", voiceOn); $("voiceBtn").textContent = voiceOn ? "🔊 Voice" : "🔈 Voice"; }
+$("voiceBtn").onclick = () => {
+  voiceOn = !voiceOn; paintVoice();
+  try { localStorage.setItem("newos_voice", voiceOn ? "1" : "0"); } catch (e) {}
+  if (!voiceOn) NewosVoice.cancel();
+};
+if (!NewosVoice.supported) $("voiceBtn").style.display = "none";
+paintVoice();
+
+// voice input
+let micOn = false;
+if (!NewosListen.supported) { $("micBtn").title = "Voice input needs Chrome, Edge or Safari"; $("micBtn").style.opacity = .35; }
+$("micBtn").onclick = () => {
+  if (!NewosListen.supported) { add("bot", "Voice input needs Chrome, Edge or Safari. You can still type."); return; }
+  micOn = !micOn;
+  $("micBtn").classList.toggle("live", micOn);
+  if (micOn) {
+    if (!voiceOn) { voiceOn = true; paintVoice(); }
+    NewosListen.start({
+      onFinal: (t) => { $("interim").textContent = ""; send(t); },
+      onInterim: (t) => { $("interim").textContent = t; },
+      onState: (s) => { if (s === "denied") { micOn = false; $("micBtn").classList.remove("live"); add("bot", "I wasn't allowed to use the microphone."); } },
+    });
+  } else { NewosListen.stop(); $("interim").textContent = ""; }
+};
+
+// knowledge panel
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const list = (xs, f = esc) => xs && xs.length ? "<ul>" + xs.map((x) => "<li>" + f(x) + "</li>").join("") + "</ul>" : '<div class="empty">Nothing yet.</div>';
+function paint() {
+  if (!state) return;
+  const p = $("panel");
+  if (tab === "logic") p.innerHTML = `<h3>Facts</h3>${list(state.facts)}<h3>Rules</h3>${list(state.rules)}<h3>“If” laws</h3>${list(state.laws)}`;
+  if (tab === "worlds") p.innerHTML = `<h3>Possible worlds</h3>` + (state.worlds.length ? state.worlds.map((w) =>
+      `<div><b>${esc(w.name)}</b> <span class="src">distance ${w.distance} · weight ${w.weight}</span>${list(w.facts)}</div>`).join("")
+      : '<div class="empty">Only the actual world. Try: <i>In world w1, the moon is cheese.</i></div>');
+  if (tab === "words") p.innerHTML = `<h3>Words I've learned</h3>` + list(state.words, (w) =>
+      `<span class="w">${esc(w.word)}</span><span class="src">${esc(w.source)}</span><br>${w.meaning ? esc(w.meaning) : '<i class="empty">meaning not known yet</i>'}`);
+  if (tab === "replies") p.innerHTML = `<h3>When you say… I say…</h3>` + list(state.replies, (r) => `<b>${esc(r.when)}</b> → ${esc(r.say)}`);
+  if (tab === "files") p.innerHTML = `<h3>Files (you are in ${esc(state.cwd)})</h3>` + list(state.files, (f) => `<a href="#" data-open="${esc(f.name)}">${esc(f.folder)}/${esc(f.name)}</a>`);
+  p.querySelectorAll("[data-open]").forEach((a) => a.onclick = (e) => { e.preventDefault(); send("open " + a.dataset.open); });
+}
+async function refresh() {
+  try { state = await (await fetch("api/state", { cache: "no-store" })).json(); $("sem").value = state.semantics; paint(); } catch (e) { /* offline */ }
+}
+document.querySelectorAll(".tab").forEach((t) => t.onclick = () => {
+  document.querySelectorAll(".tab").forEach((x) => x.classList.toggle("active", x === t));
+  tab = t.dataset.tab; paint();
+});
+$("panelBtn").onclick = () => $("side").classList.toggle("open");
+$("saveBtn").onclick = async () => { await fetch("api/save", { method: "POST" }); add("bot", "Saved."); };
+$("importIn").onchange = async (e) => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = await fetch("api/import", { method: "POST", headers: { "Content-Type": "text/plain" }, body: await f.text() });
+  const j = await r.json(); add("bot", `Imported ${j.loaded} items.`); refresh();
+};
+$("resetBtn").onclick = () => send("reset everything");
+
+add("bot", "Hi, I'm newos. Teach me facts, words and rules, ask me questions, or test how I read “if… then”. Type, or press 🎙 to talk.");
+refresh();
+</script>
+</body>
+</html>
