@@ -1,0 +1,402 @@
+newos: 200 inputs and outputs, from real runs (swipl io/make_ios.pl writes this file; swipl io/check_ios.pl checks it).
+
+1. conversation(["Why?", "Who is mortal?", "Is Socrates happy?", "The moon is not cheese."])
+   => ["Why what? Ask me a question first, and then ask why.", "I don't know anyone or anything that is mortal. (\"mortal\" means certain to die some day.)", "I don't know whether socrates is happy. Tell me and I'll remember.", "OK, I'll remember that: The moon is not cheese."]
+2. spec_open(["file1", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["ABC 123"]
+3. spec_save(["a b", "I see it."])
+   => ["I see it."]
+4. spec_navigate(["folder2", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file4"]
+5. spec_search([d, [a, a, a, a, a, a]])
+   => ["Error."]
+6. conversation(["The moon is not cheese."])
+   => ["Got it: The moon is not cheese."]
+7. spec_open(["file2", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["hedgehogs"]
+8. spec_save(["file1", "I can feel it."])
+   => ["I can feel it."]
+9. spec_navigate(["folder3", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+10. spec_search([a, [b]])
+   => ["Error."]
+11. conversation(["Who likes Mary?", "What does John like?"])
+   => ["I don't know who likes mary.", "I don't know what john does like."]
+12. spec_open(["file3", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["I like you."]
+13. spec_save(["notes", "A"])
+   => ["A"]
+14. spec_navigate(["folder1", ["folder4", ["x"]]])
+   => ["Error"]
+15. spec_search([b, [c, c]])
+   => ["Error."]
+16. conversation(["Tweety is a bird.", "Can Tweety fly?", "What is 6*7?"])
+   => ["OK, I'll remember that: Tweety is a bird.", "I don't know whether Tweety can fly. Tell me and I'll remember.", "6*7 = 42."]
+17. spec_open(["file4", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+18. spec_save(["", ""])
+   => ["Error."]
+19. spec_navigate(["folder2", ["folder2", ["file1", "file2", "file3"]]])
+   => ["file1", "file2", "file3"]
+20. spec_search([c, [d, d, d]])
+   => ["Error."]
+21. conversation(["2+2=5", "My name is Lucian."])
+   => ["Actually, 2+2 = 4, not 5.", "Nice to meet you, Lucian."]
+22. spec_open(["", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+23. spec_save(["a b", "Two. Sentences."])
+   => ["Two. Sentences."]
+24. spec_navigate(["folder3", ["folder4", ["x"]]])
+   => ["Error"]
+25. spec_search([d, [e, e, e, e]])
+   => ["Error."]
+26. conversation(["If the moon is cheese, then 2+2=4.", "use relevance logic", "All cheese is edible."])
+   => ["Something went wrong (error(type_error(lambda_free,f(moon is cheese,eq(2+2,4))),_G)). Could you put it another way?", "Now reading \"if\" with the relevance logic. \"If A then B\" needs A and B to share content, and B to follow from A.", "I've learned that All cheeses are edible."]
+27. spec_open(["file4", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+28. spec_save(["file1", "I see it."])
+   => ["I see it."]
+29. spec_navigate(["folder1", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file1", "file2"]
+30. spec_search([a, [b, c, d, e, a]])
+   => [a]
+31. conversation(["What is 12/4?", "Plato is a man.", "Is Plato mortal?", "Socrates is a man."])
+   => ["12/4 = 3.", "Got it: Plato is a man.", "I don't know whether Plato is mortal. Tell me and I'll remember.", "I've learned that Socrates is a man."]
+32. spec_open(["", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+33. spec_save(["notes", "I can feel it."])
+   => ["I can feel it."]
+34. spec_navigate(["folder2", ["folder4", ["x"]]])
+   => ["Error"]
+35. spec_search([b, [c, d, e, a, b, c]])
+   => [b, c]
+36. conversation(["Socrates is a man."])
+   => ["OK, I'll remember that: Socrates is a man."]
+37. spec_open(["file1", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["ABC 123"]
+38. spec_save(["", "A"])
+   => ["Error."]
+39. spec_navigate(["folder3", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["Error"]
+40. spec_search([c, [d]])
+   => ["Error."]
+41. conversation(["Why?", "Who is mortal?", "Is Socrates happy?", "The moon is not cheese."])
+   => ["Why what? Ask me a question first, and then ask why.", "I don't know anyone or anything that is mortal. (\"mortal\" means certain to die some day.)", "I don't know whether socrates is happy. Tell me and I'll remember.", "OK, I'll remember that: The moon is not cheese."]
+42. spec_open(["file2", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["hedgehogs"]
+43. spec_save(["a b", ""])
+   => [""]
+44. spec_navigate(["folder1", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+45. spec_search([d, [e, a]])
+   => ["Error."]
+46. conversation(["The moon is not cheese."])
+   => ["Got it: The moon is not cheese."]
+47. spec_open(["file3", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["I like you."]
+48. spec_save(["file1", "Two. Sentences."])
+   => ["Two. Sentences."]
+49. spec_navigate(["folder2", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file4"]
+50. spec_search([a, [a, b, c]])
+   => [a, b, c]
+51. conversation(["Who likes Mary?", "What does John like?"])
+   => ["I don't know who likes mary.", "I don't know what john does like."]
+52. spec_open(["file2", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["hedgehogs"]
+53. spec_save(["notes", "I see it."])
+   => ["I see it."]
+54. spec_navigate(["folder3", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+55. spec_search([b, [c, e, b, d]])
+   => [b, d]
+56. conversation(["Tweety is a bird.", "Can Tweety fly?", "What is 6*7?"])
+   => ["OK, I'll remember that: Tweety is a bird.", "I don't know whether Tweety can fly. Tell me and I'll remember.", "6*7 = 42."]
+57. spec_open(["file3", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["I like you."]
+58. spec_save(["", "I can feel it."])
+   => ["Error."]
+59. spec_navigate(["folder1", ["folder4", ["x"]]])
+   => ["Error"]
+60. spec_search([c, [d, a, c, e, b]])
+   => [c, e, b]
+61. conversation(["2+2=5", "My name is Lucian."])
+   => ["Actually, 2+2 = 4, not 5.", "Nice to meet you, Lucian."]
+62. spec_open(["file4", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+63. spec_save(["a b", "A"])
+   => ["A"]
+64. spec_navigate(["folder2", ["folder2", ["file1", "file2", "file3"]]])
+   => ["file1", "file2", "file3"]
+65. spec_search([d, [e, b, d, a, c, e]])
+   => [d, a, c, e]
+66. conversation(["If the moon is cheese, then 2+2=4.", "use relevance logic", "All cheese is edible."])
+   => ["Something went wrong (error(type_error(lambda_free,f(moon is cheese,eq(2+2,4))),_G)). Could you put it another way?", "Now reading \"if\" with the relevance logic. \"If A then B\" needs A and B to share content, and B to follow from A.", "I've learned that All cheeses are edible."]
+67. spec_open(["", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+68. spec_save(["file1", ""])
+   => [""]
+69. spec_navigate(["folder3", ["folder4", ["x"]]])
+   => ["Error"]
+70. spec_search([a, [a]])
+   => [a]
+71. conversation(["What is 12/4?", "Plato is a man.", "Is Plato mortal?", "Socrates is a man."])
+   => ["12/4 = 3.", "Got it: Plato is a man.", "I don't know whether Plato is mortal. Tell me and I'll remember.", "I've learned that Socrates is a man."]
+72. spec_open(["file1", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["ABC 123"]
+73. spec_save(["notes", "Two. Sentences."])
+   => ["Two. Sentences."]
+74. spec_navigate(["folder1", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file1", "file2"]
+75. spec_search([b, [b, d]])
+   => [b, d]
+76. conversation(["Socrates is a man."])
+   => ["OK, I'll remember that: Socrates is a man."]
+77. spec_open(["", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+78. spec_save(["", "I see it."])
+   => ["Error."]
+79. spec_navigate(["folder2", ["folder4", ["x"]]])
+   => ["Error"]
+80. spec_search([c, [d, b, e]])
+   => ["Error."]
+81. conversation(["Why?", "Who is mortal?", "Is Socrates happy?", "The moon is not cheese."])
+   => ["Why what? Ask me a question first, and then ask why.", "I don't know anyone or anything that is mortal. (\"mortal\" means certain to die some day.)", "I don't know whether socrates is happy. Tell me and I'll remember.", "OK, I'll remember that: The moon is not cheese."]
+82. spec_open(["file1", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["ABC 123"]
+83. spec_save(["a b", "I can feel it."])
+   => ["I can feel it."]
+84. spec_navigate(["folder3", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["Error"]
+85. spec_search([d, [e, c, a, d]])
+   => [d]
+86. conversation(["The moon is not cheese."])
+   => ["Got it: The moon is not cheese."]
+87. spec_open(["file2", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["hedgehogs"]
+88. spec_save(["file1", "A"])
+   => ["A"]
+89. spec_navigate(["folder1", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+90. spec_search([a, [a, d, b, e, c]])
+   => [a, d, b, e, c]
+91. conversation(["Who likes Mary?", "What does John like?"])
+   => ["I don't know who likes mary.", "I don't know what john does like."]
+92. spec_open(["file3", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["I like you."]
+93. spec_save(["notes", ""])
+   => [""]
+94. spec_navigate(["folder2", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file4"]
+95. spec_search([b, [b, e, c, a, d, b]])
+   => [b, e, c, a, d, b]
+96. conversation(["Tweety is a bird.", "Can Tweety fly?", "What is 6*7?"])
+   => ["OK, I'll remember that: Tweety is a bird.", "I don't know whether Tweety can fly. Tell me and I'll remember.", "6*7 = 42."]
+97. spec_open(["file4", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+98. spec_save(["", "Two. Sentences."])
+   => ["Error."]
+99. spec_navigate(["folder3", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+100. spec_search([c, [c]])
+   => [c]
+101. conversation(["2+2=5", "My name is Lucian."])
+   => ["Actually, 2+2 = 4, not 5.", "Nice to meet you, Lucian."]
+102. spec_open(["file3", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["I like you."]
+103. spec_save(["a b", "I see it."])
+   => ["I see it."]
+104. spec_navigate(["folder1", ["folder4", ["x"]]])
+   => ["Error"]
+105. spec_search([d, [e, d]])
+   => [d]
+106. conversation(["If the moon is cheese, then 2+2=4.", "use relevance logic", "All cheese is edible."])
+   => ["Something went wrong (error(type_error(lambda_free,f(moon is cheese,eq(2+2,4))),_G)). Could you put it another way?", "Now reading \"if\" with the relevance logic. \"If A then B\" needs A and B to share content, and B to follow from A.", "I've learned that All cheeses are edible."]
+107. spec_open(["file4", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+108. spec_save(["file1", "I can feel it."])
+   => ["I can feel it."]
+109. spec_navigate(["folder2", ["folder2", ["file1", "file2", "file3"]]])
+   => ["file1", "file2", "file3"]
+110. spec_search([a, [a, e, d]])
+   => [a, e, d]
+111. conversation(["What is 12/4?", "Plato is a man.", "Is Plato mortal?", "Socrates is a man."])
+   => ["12/4 = 3.", "Got it: Plato is a man.", "I don't know whether Plato is mortal. Tell me and I'll remember.", "I've learned that Socrates is a man."]
+112. spec_open(["", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+113. spec_save(["notes", "A"])
+   => ["A"]
+114. spec_navigate(["folder3", ["folder4", ["x"]]])
+   => ["Error"]
+115. spec_search([b, [b, a, e, d]])
+   => [b, a, e, d]
+116. conversation(["Socrates is a man."])
+   => ["OK, I'll remember that: Socrates is a man."]
+117. spec_open(["file1", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["ABC 123"]
+118. spec_save(["", ""])
+   => ["Error."]
+119. spec_navigate(["folder1", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file1", "file2"]
+120. spec_search([c, [c, b, a, e, d]])
+   => [c, b, a, e, d]
+121. conversation(["Why?", "Who is mortal?", "Is Socrates happy?", "The moon is not cheese."])
+   => ["Why what? Ask me a question first, and then ask why.", "I don't know anyone or anything that is mortal. (\"mortal\" means certain to die some day.)", "I don't know whether socrates is happy. Tell me and I'll remember.", "OK, I'll remember that: The moon is not cheese."]
+122. spec_open(["file2", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["hedgehogs"]
+123. spec_save(["a b", "Two. Sentences."])
+   => ["Two. Sentences."]
+124. spec_navigate(["folder2", ["folder4", ["x"]]])
+   => ["Error"]
+125. spec_search([d, [d, c, b, a, e, d]])
+   => [d, c, b, a, e, d]
+126. conversation(["The moon is not cheese."])
+   => ["Got it: The moon is not cheese."]
+127. spec_open(["file1", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["ABC 123"]
+128. spec_save(["file1", "I see it."])
+   => ["I see it."]
+129. spec_navigate(["folder3", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["Error"]
+130. spec_search([a, [a]])
+   => [a]
+131. conversation(["Who likes Mary?", "What does John like?"])
+   => ["I don't know who likes mary.", "I don't know what john does like."]
+132. spec_open(["file2", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["hedgehogs"]
+133. spec_save(["notes", "I can feel it."])
+   => ["I can feel it."]
+134. spec_navigate(["folder1", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+135. spec_search([b, [b, b]])
+   => [b, b]
+136. conversation(["Tweety is a bird.", "Can Tweety fly?", "What is 6*7?"])
+   => ["OK, I'll remember that: Tweety is a bird.", "I don't know whether Tweety can fly. Tell me and I'll remember.", "6*7 = 42."]
+137. spec_open(["file3", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["I like you."]
+138. spec_save(["", "A"])
+   => ["Error."]
+139. spec_navigate(["folder2", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file4"]
+140. spec_search([c, [c, c, c]])
+   => [c, c, c]
+141. conversation(["2+2=5", "My name is Lucian."])
+   => ["Actually, 2+2 = 4, not 5.", "Nice to meet you, Lucian."]
+142. spec_open(["file4", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+143. spec_save(["a b", ""])
+   => [""]
+144. spec_navigate(["folder3", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+145. spec_search([d, [d, d, d, d]])
+   => [d, d, d, d]
+146. conversation(["If the moon is cheese, then 2+2=4.", "use relevance logic", "All cheese is edible."])
+   => ["Something went wrong (error(type_error(lambda_free,f(moon is cheese,eq(2+2,4))),_G)). Could you put it another way?", "Now reading \"if\" with the relevance logic. \"If A then B\" needs A and B to share content, and B to follow from A.", "I've learned that All cheeses are edible."]
+147. spec_open(["", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+148. spec_save(["file1", "Two. Sentences."])
+   => ["Two. Sentences."]
+149. spec_navigate(["folder1", ["folder4", ["x"]]])
+   => ["Error"]
+150. spec_search([a, [e, e, e, e, e]])
+   => ["Error."]
+151. conversation(["What is 12/4?", "Plato is a man.", "Is Plato mortal?", "Socrates is a man."])
+   => ["12/4 = 3.", "Got it: Plato is a man.", "I don't know whether Plato is mortal. Tell me and I'll remember.", "I've learned that Socrates is a man."]
+152. spec_open(["file4", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+153. spec_save(["notes", "I see it."])
+   => ["I see it."]
+154. spec_navigate(["folder2", ["folder2", ["file1", "file2", "file3"]]])
+   => ["file1", "file2", "file3"]
+155. spec_search([b, [b, c, d, e, a, b]])
+   => [b, c, d, e, a, b]
+156. conversation(["Socrates is a man."])
+   => ["OK, I'll remember that: Socrates is a man."]
+157. spec_open(["", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+158. spec_save(["", "I can feel it."])
+   => ["Error."]
+159. spec_navigate(["folder3", ["folder4", ["x"]]])
+   => ["Error"]
+160. spec_search([c, [c]])
+   => [c]
+161. conversation(["Why?", "Who is mortal?", "Is Socrates happy?", "The moon is not cheese."])
+   => ["Why what? Ask me a question first, and then ask why.", "I don't know anyone or anything that is mortal. (\"mortal\" means certain to die some day.)", "I don't know whether socrates is happy. Tell me and I'll remember.", "OK, I'll remember that: The moon is not cheese."]
+162. spec_open(["file1", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["ABC 123"]
+163. spec_save(["a b", "A"])
+   => ["A"]
+164. spec_navigate(["folder1", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file1", "file2"]
+165. spec_search([d, [d, e]])
+   => [d, e]
+166. conversation(["The moon is not cheese."])
+   => ["Got it: The moon is not cheese."]
+167. spec_open(["file2", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["hedgehogs"]
+168. spec_save(["file1", ""])
+   => [""]
+169. spec_navigate(["folder2", ["folder4", ["x"]]])
+   => ["Error"]
+170. spec_search([a, [e, a, b]])
+   => [a, b]
+171. conversation(["Who likes Mary?", "What does John like?"])
+   => ["I don't know who likes mary.", "I don't know what john does like."]
+172. spec_open(["file3", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["I like you."]
+173. spec_save(["notes", "Two. Sentences."])
+   => ["Two. Sentences."]
+174. spec_navigate(["folder3", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["Error"]
+175. spec_search([b, [a, b, c, d]])
+   => [b, c, d]
+176. conversation(["Tweety is a bird.", "Can Tweety fly?", "What is 6*7?"])
+   => ["OK, I'll remember that: Tweety is a bird.", "I don't know whether Tweety can fly. Tell me and I'll remember.", "6*7 = 42."]
+177. spec_open(["file2", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["hedgehogs"]
+178. spec_save(["", "I see it."])
+   => ["Error."]
+179. spec_navigate(["folder1", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+180. spec_search([c, [c, e, b, d, a]])
+   => [c, e, b, d, a]
+181. conversation(["2+2=5", "My name is Lucian."])
+   => ["Actually, 2+2 = 4, not 5.", "Nice to meet you, Lucian."]
+182. spec_open(["file3", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["I like you."]
+183. spec_save(["a b", "I can feel it."])
+   => ["I can feel it."]
+184. spec_navigate(["folder2", ["folder1", ["file1", "file2"]], ["folder2", ["file4"]]])
+   => ["file4"]
+185. spec_search([d, [d, a, c, e, b, d]])
+   => [d, a, c, e, b, d]
+186. conversation(["If the moon is cheese, then 2+2=4.", "use relevance logic", "All cheese is edible."])
+   => ["Something went wrong (error(type_error(lambda_free,f(moon is cheese,eq(2+2,4))),_G)). Could you put it another way?", "Now reading \"if\" with the relevance logic. \"If A then B\" needs A and B to share content, and B to follow from A.", "I've learned that All cheeses are edible."]
+187. spec_open(["file4", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+188. spec_save(["file1", "A"])
+   => ["A"]
+189. spec_navigate(["folder3", ["folder2", ["file1", "file2", "file3"]]])
+   => ["Error"]
+190. spec_search([a, [e]])
+   => ["Error."]
+191. conversation(["What is 12/4?", "Plato is a man.", "Is Plato mortal?", "Socrates is a man."])
+   => ["12/4 = 3.", "Got it: Plato is a man.", "I don't know whether Plato is mortal. Tell me and I'll remember.", "I've learned that Socrates is a man."]
+192. spec_open(["", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["Error."]
+193. spec_save(["notes", ""])
+   => [""]
+194. spec_navigate(["folder1", ["folder4", ["x"]]])
+   => ["Error"]
+195. spec_search([b, [a, c]])
+   => ["Error."]
+196. conversation(["Socrates is a man."])
+   => ["OK, I'll remember that: Socrates is a man."]
+197. spec_open(["file1", [["file1", "ABC 123"], ["file2", "hedgehogs"], ["file3", "I like you."]]])
+   => ["ABC 123"]
+198. spec_save(["", "Two. Sentences."])
+   => ["Error."]
+199. spec_navigate(["folder2", ["folder2", ["file1", "file2", "file3"]]])
+   => ["file1", "file2", "file3"]
+200. spec_search([c, [b, d, a]])
+   => ["Error."]
